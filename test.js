@@ -24,14 +24,27 @@ async function runTests() {
     startedLocally = true;
   }
 
+  async function loginOrCreate(name, email, password) {
+    let res = await fetch(`${BASE_URL}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    let data = await res.json();
+    if (!data.success) {
+      const regRes = await fetch(`${BASE_URL}/api/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+      data = await regRes.json();
+    }
+    return data;
+  }
+
   // 1. Test Login API with Alice
   console.log('--- Step 1: Testing Login API ---');
-  const loginRes = await fetch(`${BASE_URL}/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'alice@example.com', password: 'password123' })
-  });
-  const loginData = await loginRes.json();
+  const loginData = await loginOrCreate('Alice Allison', 'alice@example.com', 'password123');
   if (!loginData.success || !loginData.token) {
     throw new Error('Login failed: ' + JSON.stringify(loginData));
   }
@@ -40,13 +53,8 @@ async function runTests() {
   const aliceUser = loginData.user;
 
   // 2. Test Bob Login API
-  const bobLoginRes = await fetch(`${BASE_URL}/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'bob@example.com', password: 'password123' })
-  });
-  const bobData = await bobLoginRes.json();
-  if (!bobData.success) throw new Error('Bob login failed');
+  const bobData = await loginOrCreate('Bob Roberts', 'bob@example.com', 'password123');
+  if (!bobData.success || !bobData.token) throw new Error('Bob login failed');
   const bobToken = bobData.token;
   const bobUser = bobData.user;
   console.log('✅ Bob logged in successfully. User ID:', bobUser.id);

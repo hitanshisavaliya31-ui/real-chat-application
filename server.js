@@ -60,4 +60,8 @@ if (require.main === module) {
   startServer();
 }
 
-module.exports = { app, server, io, startServer };
+module.exports = app;
+module.exports.app = app;
+module.exports.server = server;
+module.exports.io = io;
+module.exports.startServer = startServer;
