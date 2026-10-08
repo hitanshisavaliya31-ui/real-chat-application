@@ -1,0 +1,20 @@
+[
+  {
+    "id": "user_1790824517900_m5cu8",
+    "email": "hitanshisavaliya31@gmail.com",
+    "name": "Hitanshi",
+    "password": "$2b$10$YqfpZCS.TM0fwVQdD/ycT.AZQI1Uy3sY3OPIRsLuT2V3cemexwke6",
+    "avatarColor": "#7c3aed",
+    "createdAt": "2026-10-01T03:15:17.900Z",
+    "lastSeen": "2026-10-01T03:58:08.765Z"
+  },
+  {
+    "id": "user_1790825261722_4jn8w",
+    "email": "n@gmail.com",
+    "name": "nikita",
+    "password": "$2b$10$SbRGxuFrtbRR9XLjD2d3buRA2tZOsCklH.x32oWXE.9jeii5pVhha",
+    "avatarColor": "#dc2626",
+    "createdAt": "2026-10-01T03:27:41.722Z",
+    "lastSeen": "2026-10-01T03:27:41.722Z"
+  }
+]

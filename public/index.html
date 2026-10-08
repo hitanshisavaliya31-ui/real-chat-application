@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PulseChat - Realtime Broadcast, Group & 1-on-1 Messenger</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="10" r="1" fill="currentColor"></circle>
+            <circle cx="8" cy="10" r="1" fill="currentColor"></circle>
+            <circle cx="16" cy="10" r="1" fill="currentColor"></circle>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <div class="brand-title">PulseChat</div>
+          <div class="socket-status" id="socketStatus">
+            <span class="status-dot"></span>
+            <span class="status-label">Connecting...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Switcher Tabs -->
+      <nav class="mode-navigation">
+        <button id="navBroadcastBtn" class="mode-tab active" data-mode="broadcast">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"></path>
+            <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"></path>
+            <circle cx="12" cy="12" r="2"></circle>
+            <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"></path>
+            <path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"></path>
+          </svg>
+          <span>Group Broadcast</span>
+          <span class="badge-pill broadcast-pill" id="navBroadcastCount">0</span>
+        </button>
+
+        <button id="navDirectBtn" class="mode-tab" data-mode="direct">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>Personal & Groups</span>
+          <span class="badge-pill direct-pill hidden" id="navDirectUnreadTotal">0</span>
+        </button>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <button id="soundToggleBtn" class="icon-button" title="Toggle audio notification sounds">
+          <svg id="soundOnIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+          <svg id="soundOffIcon" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
+
+        <div id="userHeaderBadge" class="user-pill hidden">
+          <div class="user-avatar-small" id="headerUserAvatar">U</div>
+          <span class="header-user-name" id="headerUserName">User</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="app-body">
+
+      <!-- ============================================== -->
+      <!-- VIEW 1: GROUP BROADCAST CHAT                   -->
+      <!-- ============================================== -->
+      <section id="broadcastView" class="view-panel active">
+        <!-- Overlay: Join with Name Prompt -->
+        <div id="broadcastJoinPrompt" class="welcome-overlay">
+          <div class="welcome-card">
+            <div class="welcome-badge">
+              <span class="pulse-indicator"></span> Live Broadcast
+            </div>
+            <h2>Join Community Broadcast</h2>
+            <p>Enter your display name to immediately join the open group chat stream. No password needed!</p>
+
+            <form id="broadcastJoinForm" class="auth-form">
+              <div class="form-group">
+                <label for="broadcastNameInput">Your Display Name</label>
+                <div class="input-with-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <input type="text" id="broadcastNameInput" placeholder="e.g. Alex Rivera, GuestCoder" maxlength="30" required autocomplete="name">
+                </div>
+              </div>
+
+              <button type="submit" class="primary-btn">
+                <span>Enter Broadcast Chat</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </button>
+            </form>
+
+            <div class="welcome-switch-hint">
+              <span>Looking for private 1-to-1 or group chat?</span>
+              <button id="switchFromJoinToPersonal" class="text-link">Sign in with Email & Password</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Broadcast Conversation Screen -->
+        <div id="broadcastChatContainer" class="broadcast-container hidden">
+          <!-- Broadcast Sub-Header -->
+          <div class="conversation-header broadcast-header">
+            <div class="header-left">
+              <div class="channel-icon">📢</div>
+              <div>
+                <div class="header-title-row">
+                  <h3>Public Broadcast Channel</h3>
+                  <span class="live-tag">LIVE</span>
+                </div>
+                <div class="header-subtitle">
+                  <span id="broadcastOnlineText">0 members online</span>
+                  <span class="bullet">•</span>
+                  <span>Joined as <strong id="broadcastMyNameDisplay">Guest</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="header-right">
+              <button id="toggleBroadcastUsersBtn" class="pill-btn" title="View online members">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <span id="broadcastUsersCountBtn">Online (0)</span>
+              </button>
+              <button id="changeBroadcastNameBtn" class="pill-btn subtle-btn" title="Change nickname">
+                Change Name
+              </button>
+            </div>
+          </div>
+
+          <!-- Drawer of Broadcast Members -->
+          <div id="broadcastMembersDrawer" class="members-drawer hidden">
+            <div class="drawer-header">
+              <h4>Active in Broadcast (<span id="drawerMembersCount">0</span>)</h4>
+              <button id="closeMembersDrawerBtn" class="drawer-close-btn">&times;</button>
+            </div>
+            <div id="broadcastMembersList" class="drawer-user-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Message History Container -->
+          <div class="messages-container" id="broadcastMessagesContainer">
+            <div class="messages-list" id="broadcastMessagesList">
+              <!-- Broadcast messages rendered here -->
+            </div>
+          </div>
+
+          <!-- Typing Indicator -->
+          <div id="broadcastTypingIndicator" class="typing-bar hidden">
+            <div class="typing-bubble">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+            <span id="broadcastTypingText" class="typing-text">Someone is typing...</span>
+          </div>
+
+          <!-- Chat Input Area -->
+          <div class="composer-container">
+            <div class="quick-emoji-bar" id="broadcastEmojiBar">
+              <button class="emoji-chip" data-emoji="👋">👋</button>
+              <button class="emoji-chip" data-emoji="👍">👍</button>
+              <button class="emoji-chip" data-emoji="🔥">🔥</button>
+              <button class="emoji-chip" data-emoji="😂">😂</button>
+              <button class="emoji-chip" data-emoji="❤️">❤️</button>
+              <button class="emoji-chip" data-emoji="🎉">🎉</button>
+              <button class="emoji-chip" data-emoji="🚀">🚀</button>
+            </div>
+            <form id="broadcastMessageForm" class="message-composer">
+              <input type="text" id="broadcastMessageInput" placeholder="Broadcast a message to everyone..." autocomplete="off" maxlength="500">
+              <button type="submit" class="send-btn" id="broadcastSendBtn" title="Send broadcast (Enter)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 2: PERSONAL 1-ON-1 & GROUPS (AUTH REQ)    -->
+      <!-- ============================================== -->
+      <section id="directView" class="view-panel">
+
+        <!-- 2A. Auth Screen (Login / Register) -->
+        <div id="directAuthOverlay" class="welcome-overlay">
+          <div class="welcome-card auth-card">
+            <div class="auth-tabs">
+              <button id="authTabLogin" class="auth-tab-btn active" data-tab="login">Sign In</button>
+              <button id="authTabRegister" class="auth-tab-btn" data-tab="register">Create Account</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form">
+              <div class="auth-header-desc">
+                <h3>Welcome Back</h3>
+                <p>Sign in with email and password to access private 1-on-1 chat and team groups.</p>
+              </div>
+
+              <div id="loginAlert" class="form-alert hidden"></div>
+
+              <div class="form-group">
+                <label for="loginEmail">Email Address</label>
+                <div class="input-with-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                  </svg>
+                  <input type="email" id="loginEmail" placeholder="yourname@example.com" required autocomplete="email">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="loginPassword">Password</label>
+                <div class="input-with-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+              </div>
+
+              <button type="submit" class="primary-btn" id="loginSubmitBtn">
+                <span>Sign In to Chat</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="auth-form hidden">
+              <div class="auth-header-desc">
+                <h3>Create an Account</h3>
+                <p>Set up your profile to start chatting 1-on-1 and make custom groups.</p>
+              </div>
+
+              <div id="registerAlert" class="form-alert hidden"></div>
+
+              <div class="form-group">
+                <label for="regName">Full Name</label>
+                <div class="input-with-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <input type="text" id="regName" placeholder="e.g. Maya Lin" required autocomplete="name">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="regEmail">Email Address</label>
+                <div class="input-with-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                  </svg>
+                  <input type="email" id="regEmail" placeholder="yourname@example.com" required autocomplete="email">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="regPassword">Password (minimum 6 characters)</label>
+                <div class="input-with-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <input type="password" id="regPassword" placeholder="••••••••" minlength="6" required autocomplete="new-password">
+                </div>
+              </div>
+
+              <button type="submit" class="primary-btn" id="registerSubmitBtn">
+                <span>Create Account & Join</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- 2B. Direct & Groups Conversation Layout (Split View) -->
+        <div id="directAppLayout" class="direct-layout hidden">
+
+          <!-- Left Sidebar: Contacts, Groups & Profile -->
+          <aside class="direct-sidebar" id="directSidebar">
+            <!-- Current Logged In User Profile -->
+            <div class="profile-header">
+              <div class="profile-left">
+                <div class="avatar-wrapper">
+                  <div class="user-avatar" id="myProfileAvatar">M</div>
+                  <span class="status-indicator online"></span>
+                </div>
+                <div class="profile-text">
+                  <h4 id="myProfileName">My Name</h4>
+                  <p id="myProfileEmail">myemail@example.com</p>
+                </div>
+              </div>
+              <div class="profile-actions">
+                <button id="logoutBtn" class="icon-button danger" title="Log out">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Search Box & Filter Tabs -->
+            <div class="sidebar-search-section">
+              <div class="contact-search-box">
+                <div class="input-with-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input type="text" id="contactSearchInput" placeholder="Search chats or groups...">
+                </div>
+              </div>
+
+              <!-- Filter tabs: All | 1-on-1 | Groups -->
+              <div class="chat-filter-tabs">
+                <button class="filter-tab active" data-filter="all">All</button>
+                <button class="filter-tab" data-filter="direct">1-on-1</button>
+                <button class="filter-tab" data-filter="groups">Groups</button>
+              </div>
+            </div>
+
+            <!-- Conversations List Header with Create Group Button -->
+            <div class="contacts-list-wrapper">
+              <div class="contacts-list-header">
+                <span>CONVERSATIONS</span>
+                <button id="openCreateGroupBtn" class="create-group-trigger" title="Create a new group">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>New Group</span>
+                </button>
+              </div>
+              <div class="contacts-list" id="contactsList">
+                <!-- Dynamically populated contacts & groups -->
+              </div>
+            </div>
+          </aside>
+
+          <!-- Right Conversation Main Window -->
+          <section class="direct-main-chat" id="directMainChat">
+            <!-- No Conversation Selected (Empty State) -->
+            <div id="noConversationSelected" class="empty-conversation-state">
+              <div class="empty-illustration">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                </svg>
+              </div>
+              <h3>Select a Conversation</h3>
+              <p>Choose a 1-on-1 contact or a group from the left, or create a brand new group with team members.</p>
+              <div class="empty-hint">
+                <span>💡 Tip:</span> Hover over any message you've sent to find the 🗑️ <strong>Delete</strong> option!
+              </div>
+            </div>
+
+            <!-- Active Conversation Container (1-on-1 or Group) -->
+            <div id="activeDirectConversation" class="active-conversation-container hidden">
+              <!-- Conversation Header -->
+              <div class="conversation-header direct-chat-header">
+                <div class="header-left">
+                  <!-- Mobile Back Button -->
+                  <button id="directMobileBackBtn" class="icon-button mobile-back-btn" title="Back to chats">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="19" y1="12" x2="5" y2="12"></line>
+                      <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                  </button>
+
+                  <div class="avatar-wrapper">
+                    <div class="user-avatar" id="activeContactAvatar">C</div>
+                    <span id="activeContactStatusDot" class="status-indicator offline"></span>
+                  </div>
+
+                  <div class="header-contact-info">
+                    <h3 id="activeContactName">Conversation Name</h3>
+                    <div class="header-subtitle" id="activeContactStatusText">Active now</div>
+                  </div>
+                </div>
+
+                <div class="header-right">
+                  <div id="activeConversationTypeBadge" class="badge-pill private-pill">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span id="activeConversationTypeText">1-on-1 Private</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Message History List -->
+              <div class="messages-container" id="directMessagesContainer">
+                <div class="messages-list" id="directMessagesList">
+                  <!-- Messages rendered here -->
+                </div>
+              </div>
+
+              <!-- Typing Indicator -->
+              <div id="directTypingIndicator" class="typing-bar hidden">
+                <div class="typing-bubble">
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                </div>
+                <span id="directTypingText" class="typing-text">Someone is typing...</span>
+              </div>
+
+              <!-- Message Composer -->
+              <div class="composer-container">
+                <div class="quick-emoji-bar" id="directEmojiBar">
+                  <button class="emoji-chip" data-emoji="👋">👋</button>
+                  <button class="emoji-chip" data-emoji="👍">👍</button>
+                  <button class="emoji-chip" data-emoji="❤️">❤️</button>
+                  <button class="emoji-chip" data-emoji="😂">😂</button>
+                  <button class="emoji-chip" data-emoji="🔥">🔥</button>
+                  <button class="emoji-chip" data-emoji="🎉">🎉</button>
+                  <button class="emoji-chip" data-emoji="✨">✨</button>
+                </div>
+                <form id="directMessageForm" class="message-composer">
+                  <input type="text" id="directMessageInput" placeholder="Type a message..." autocomplete="off" maxlength="1000">
+                  <button type="submit" class="send-btn" id="directSendBtn" title="Send message (Enter)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- 2C. Create Group Modal (Group Make) -->
+        <div id="createGroupModal" class="welcome-overlay hidden">
+          <div class="welcome-card group-modal-card">
+            <div class="modal-header">
+              <div class="modal-title-row">
+                <div class="group-icon-badge">👥</div>
+                <div>
+                  <h3>Make New Group</h3>
+                  <p>Group chat with multiple teammates or friends</p>
+                </div>
+              </div>
+              <button id="closeGroupModalBtn" class="drawer-close-btn" type="button">&times;</button>
+            </div>
+
+            <form id="createGroupForm" class="auth-form">
+              <div id="createGroupAlert" class="form-alert hidden"></div>
+
+              <div class="form-group">
+                <label for="newGroupName">Group Name *</label>
+                <div class="input-with-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                  <input type="text" id="newGroupName" placeholder="e.g. Frontend Team, Design Sprint" required maxlength="50">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="newGroupDesc">Description (Optional)</label>
+                <input type="text" id="newGroupDesc" class="simple-input" placeholder="Topic or purpose of this group..." maxlength="120">
+              </div>
+
+              <div class="form-group">
+                <label>Select Members to Add (<span id="selectedMembersCount">0</span> selected)</label>
+                <div class="members-checklist" id="groupMembersChecklist">
+                  <!-- Checkbox items populated dynamically -->
+                </div>
+              </div>
+
+              <div class="modal-actions-row">
+                <button type="button" id="cancelGroupBtn" class="pill-btn subtle-btn">Cancel</button>
+                <button type="submit" class="primary-btn" id="submitCreateGroupBtn">
+                  <span>Create Group</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Socket.IO Client Library -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Modular Scripts -->
+  <script src="/js/sound.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/broadcast.js"></script>
+  <script src="/js/direct.js"></script>
+  <script src="/js/main.js"></script>
+</body>
+</html>
